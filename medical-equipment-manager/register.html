@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registro - Mantenimiento Predictivo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="login-screen">
+    <div class="login-box">
+      <div class="login-logo-container">
+        <img src="logo.png" alt="Hospital Civil Nuevo de Guadalajara" class="login-logo">
+      </div>
+
+      <h2>Registro de usuario</h2>
+      <p>Hospital Civil Nuevo de Guadalajara</p>
+
+      <form id="registerForm">
+        <input id="regName" type="text" placeholder="Nombre" required />
+        <input id="regEmail" type="email" placeholder="Correo" required />
+        <input id="regPass" type="password" placeholder="Contraseña" required />
+        <button type="submit" class="btn">Crear cuenta</button>
+
+        <div style="margin-top:10px;font-size:13px;">
+          <a href="index.html" class="muted-link">Volver al inicio de sesión</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="register.js"></script>
+</body>
+</html>

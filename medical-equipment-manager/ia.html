@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bio-IA — Mantenimiento Predictivo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ── Bio-IA specific styles ── */
+    :root {
+      --ia-accent: #0a4488;
+      --ia-green: #16a34a;
+      --ia-yellow: #d97706;
+      --ia-red: #dc2626;
+      --ia-purple: #7c3aed;
+    }
+
+    .ia-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar reutilizado del proyecto */
+    .ia-sidebar {
+      width: 260px;
+      background: linear-gradient(180deg,#fff,#f3f7fb);
+      padding: 18px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .ia-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
+    .ia-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .ia-topbar h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #073b6b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ia-badge {
+      background: linear-gradient(135deg, #7c3aed, #0a4488);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .ia-content {
+      padding: 20px;
+      flex: 1;
+      overflow: auto;
+    }
+
+    /* Risk cards row */
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .risk-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(2,6,23,0.05);
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+
+    .risk-card:hover {
+      box-shadow: 0 8px 24px rgba(2,6,23,0.10);
+      transform: translateY(-1px);
+    }
+
+    .risk-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .risk-eq-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: #07203a;
+    }
+
+    .risk-eq-area {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .risk-score {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .risk-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: #fff;
+    }
+
+    .risk-circle.low    { background: linear-gradient(135deg, #16a34a, #22c55e); }
+    .risk-circle.medium { background: linear-gradient(135deg, #d97706, #f59e0b); }
+    .risk-circle.high   { background: linear-gradient(135deg, #dc2626, #ef4444); }
+    .risk-circle.critical { background: linear-gradient(135deg, #7c3aed, #9d4edd); animation: pulse-ring 1.5s infinite; }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(124,58,237,0.5); }
+      70%  { box-shadow: 0 0 0 10px rgba(124,58,237,0); }
+      100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); }
+    }
+
+    .risk-label {
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 3px;
+      text-transform: uppercase;
+    }
+
+    .risk-label.low    { color: #16a34a; }
+    .risk-label.medium { color: #d97706; }
+    .risk-label.high   { color: #dc2626; }
+    .risk-label.critical { color: #7c3aed; }
+
+    .risk-bar-wrap {
+      margin: 8px 0 6px;
+    }
+
+    .risk-bar-bg {
+      background: #f1f5f9;
+      border-radius: 6px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .risk-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.8s ease;
+    }
+
+    .risk-bar-fill.low    { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .risk-bar-fill.medium { background: linear-gradient(90deg, #d97706, #fbbf24); }
+    .risk-bar-fill.high   { background: linear-gradient(90deg, #dc2626, #f87171); }
+    .risk-bar-fill.critical { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+
+    .risk-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .risk-meta span {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    /* AI Panel */
+    .ai-panel {
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 16px rgba(2,6,23,0.06);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .ai-panel-header {
+      background: linear-gradient(135deg, #0a4488, #1a5faa);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ai-panel-header h3 {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .ai-panel-header p {
+      color: rgba(255,255,255,0.75);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .ai-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .ai-panel-body {
+      padding: 20px;
+    }
+
+    /* Chat interface */
+    .chat-wrap {
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      min-height: 320px;
+      max-height: 460px;
+      overflow-y: auto;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 250px;
+      color: var(--muted);
+      text-align: center;
+      gap: 10px;
+    }
+
+    .chat-empty .chat-icon {
+      font-size: 40px;
+      opacity: 0.4;
+    }
+
+    .chat-msg {
+      display: flex;
+      gap: 10px;
+      max-width: 85%;
+    }
+
+    .chat-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .chat-msg.assistant { align-self: flex-start; }
+
+    .chat-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .chat-msg.user .chat-avatar     { background: linear-gradient(135deg, #0a4488, #1a6bb5); color: #fff; }
+    .chat-msg.assistant .chat-avatar { background: linear-gradient(135deg, #7c3aed, #9d4edd); color: #fff; }
+
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    .chat-msg.user .chat-bubble {
+      background: linear-gradient(135deg, #0a4488, #1a5faa);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-msg.assistant .chat-bubble {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+      border-bottom-left-radius: 4px;
+      white-space: pre-wrap;
+    }
+
+    .chat-bubble strong { font-weight: 700; }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+    }
+
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      background: #94a3b8;
+      border-radius: 50%;
+      animation: typing-bounce 1.2s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing-bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30%            { transform: translateY(-6px); }
+    }
+
+    /* Chat input */
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input-row input:focus {
+      border-color: #0a4488;
+      box-shadow: 0 0 0 3px rgba(10,68,136,0.08);
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #0a4488, #1a5faa);
+      color: #fff;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-send:hover { opacity: 0.9; }
+    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Quick prompts */
+    .quick-prompts {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .quick-chip {
+      background: #eef6ff;
+      border: 1px solid #c3d9f8;
+      color: #073b6b;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .quick-chip:hover { background: #dbeafe; }
+
+    /* Summary section */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-stat {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .summary-stat .stat-val {
+      font-size: 28px;
+      font-weight: 800;
+      color: #07203a;
+    }
+
+    .summary-stat .stat-lbl {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Section headers */
+    .section-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .section-hdr h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #073b6b;
+    }
+
+    .section-hdr .section-badge {
+      background: #eef6ff;
+      color: #0a4488;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 8px;
+    }
+
+    /* Loading overlay for risk cards */
+    .loading-skeleton {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e8edf2 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 12px;
+      height: 140px;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Alert banner */
+    .ia-alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .ia-alert.critical {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #7f1d1d;
+    }
+
+    .ia-alert.warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #78350f;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .ia-sidebar { display: none; }
+      .risk-grid { grid-template-columns: 1fr; }
+    }
+
+    .nav-item-ia {
+      background: linear-gradient(90deg, #e8e0ff, #ede9ff);
+      color: #5b21b6 !important;
+    }
+
+    .tag { display:inline-block; padding:3px 8px; border-radius:6px; font-size:12px; font-weight:600; }
+    .tag.green  { background:#dcfce7; color:#166534; }
+    .tag.yellow { background:#fef9c3; color:#854d0e; }
+    .tag.red    { background:#fee2e2; color:#991b1b; }
+  </style>
+</head>
+<body>
+<div class="ia-layout">
+
+  <!-- Sidebar (mismo del proyecto) -->
+  <aside class="ia-sidebar">
+    <img src="logo.png" alt="Logo" style="width:160px;border-radius:8px;margin:0 auto;display:block;" onerror="this.style.display='none'"/>
+    <div class="brand" style="margin-top:6px;">Mantenimiento<br/><span>Predictivo</span></div>
+    <nav class="nav" style="margin-top:10px;">
+      <button class="nav-item" onclick="location.href='index.html?view=dashboard'">Dashboard</button>
+      <button class="nav-item" onclick="location.href='index.html?view=inventory'">Inventario</button>
+      <button class="nav-item" onclick="location.href='index.html?view=calendar'">Calendario</button>
+      <button class="nav-item" onclick="location.href='index.html?view=orders'">Órdenes</button>
+      <button class="nav-item" onclick="location.href='index.html?view=settings'">Ajustes</button>
+      <button class="nav-item nav-item-ia active">🤖 Bio-IA</button>
+      <button class="nav-item" onclick="location.href='politicas.html'" style="background:linear-gradient(90deg,#dbeafe,#eff6ff);color:#1d4ed8;font-weight:700;">📋 Políticas</button>
+    </nav>
+    <div class="sidebar-footer" style="margin-top:auto;">Dept. Ingeniería Biomédica</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="ia-main">
+    <header class="ia-topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="logo.png" style="height:36px;" onerror="this.style.display='none'">
+        <div>
+          <h1>
+            Módulo Bio-Inteligencia Artificial
+            <span class="ia-badge">Bio-IA</span>
+          </h1>
+          <div style="font-size:12px;color:var(--muted);">Hospital Civil Nuevo de Guadalajara "Dr. Juan I. Menchaca"</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn secondary" style="font-size:13px;" onclick="runRiskAnalysis()">⚡ Recalcular riesgo</button>
+        <span id="iaUserName" style="font-size:13px;color:var(--muted);">—</span>
+      </div>
+    </header>
+
+    <div class="ia-content">
+
+      <!-- Alert banner (critical/warning equipos) -->
+      <div id="alertBanner"></div>
+
+      <!-- Stats summary -->
+      <div class="summary-grid" id="summaryGrid">
+        <div class="summary-stat"><div class="stat-val" id="sTotal">—</div><div class="stat-lbl">Equipos total</div></div>
+        <div class="summary-stat"><div class="stat-val" id="sCritical" style="color:#7c3aed;">—</div><div class="stat-lbl">Riesgo crítico</div></div>
+        <div class="summary-stat"><div class="stat-val" id="sHigh" style="color:#dc2626;">—</div><div class="stat-lbl">Riesgo alto</div></div>
+        <div class="summary-stat"><div class="stat-val" id="sMedium" style="color:#d97706;">—</div><div class="stat-lbl">Riesgo medio</div></div>
+        <div class="summary-stat"><div class="stat-val" id="sLow" style="color:#16a34a;">—</div><div class="stat-lbl">Riesgo bajo</div></div>
+      </div>
+
+      <!-- Risk Cards -->
+      <div class="section-hdr">
+        <h3>📊 Score de Riesgo por Equipo</h3>
+        <span class="section-badge" id="riskBadge">Cargando…</span>
+      </div>
+      <div class="risk-grid" id="riskGrid">
+        <!-- skeletons while loading -->
+        <div class="loading-skeleton"></div>
+        <div class="loading-skeleton"></div>
+        <div class="loading-skeleton"></div>
+      </div>
+
+      <!-- AI Chat Panel -->
+      <div class="ai-panel">
+        <div class="ai-panel-header">
+          <div class="ai-icon">🤖</div>
+          <div>
+            <h3>Asistente de Bio-IA — Análisis Predictivo</h3>
+            <p>Consulta el estado de equipos, prioridades de mantenimiento o solicita predicciones.</p>
+          </div>
+        </div>
+        <div class="ai-panel-body">
+
+          <!-- Quick prompts -->
+          <div class="quick-prompts" id="quickPrompts">
+            <span class="quick-chip" data-q="¿Qué equipos necesitan atención urgente esta semana?">🚨 Urgentes esta semana</span>
+            <span class="quick-chip" data-q="Dame un resumen general del estado del parque tecnológico del hospital.">📋 Resumen general</span>
+            <span class="quick-chip" data-q="¿Cuáles son los equipos con mayor probabilidad de falla próxima?">⚠️ Predicción de fallas</span>
+            <span class="quick-chip" data-q="¿Qué mantenimientos preventivos se han vencido?">📅 Mantenimientos vencidos</span>
+            <span class="quick-chip" data-q="Recomiéndame un plan de acción para los equipos de mayor riesgo.">🎯 Plan de acción</span>
+          </div>
+
+          <!-- Chat messages -->
+          <div class="chat-wrap" id="chatWrap">
+            <div class="chat-empty" id="chatEmpty">
+              <div class="chat-icon">🤖</div>
+              <div><strong>Asistente Bio-IA listo</strong></div>
+              <div style="font-size:13px;">Selecciona una pregunta rápida o escribe tu consulta abajo.</div>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Escribe tu consulta sobre los equipos del hospital…" />
+            <button class="btn-send" id="btnSend" onclick="sendChat()">
+              Enviar ➤
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ia-content -->
+  </main>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA (from localStorage — same keys as main app)
+// ─────────────────────────────────────────────
+const KEY_INV  = 'mp_inv_v1';
+const KEY_ORD  = 'mp_ord_v1';
+const KEY_EVT  = 'mp_evt_v1';
+const KEY_SESSION = 'mp_logged_user';
+
+function loadData() {
+  return {
+    inventory: JSON.parse(localStorage.getItem(KEY_INV) || '[]'),
+    orders:    JSON.parse(localStorage.getItem(KEY_ORD) || '[]'),
+    events:    JSON.parse(localStorage.getItem(KEY_EVT) || '[]'),
+  };
+}
+
+// Auth check
+(function checkAuth() {
+  const sess = JSON.parse(localStorage.getItem(KEY_SESSION) || 'null');
+  if (!sess) { location.replace('index.html'); return; }
+  document.getElementById('iaUserName').textContent = (sess.name || sess.username) + ' ▾';
+})();
+
+// ─────────────────────────────────────────────
+// RISK SCORE CALCULATION (deterministic, no API needed)
+// ─────────────────────────────────────────────
+function calcRiskScore(eq, events, orders) {
+  let score = 0;
+  const today = new Date();
+
+  // 1. Estado del equipo
+  if (eq.status === 'Fuera de servicio')   score += 35;
+  else if (eq.status === 'En mantenimiento') score += 15;
+
+  // 2. Días desde último mantenimiento
+  const eqOrders = orders.filter(o =>
+    o.status === 'Cerrada' && (
+      (o.equipment && o.equipment.serial === eq.serial) ||
+      String(o.eq).includes(eq.serial)
+    )
+  );
+  if (eqOrders.length === 0) {
+    score += 25; // nunca tuvo mantenimiento registrado
+  } else {
+    const lastDate = eqOrders.map(o => new Date(o.date)).sort((a,b)=>b-a)[0];
+    const daysSince = Math.floor((today - lastDate) / (1000*60*60*24));
+    if      (daysSince > 365) score += 30;
+    else if (daysSince > 180) score += 20;
+    else if (daysSince > 90)  score += 10;
+    else if (daysSince > 30)  score += 4;
+  }
+
+  // 3. Mantenimientos vencidos (eventos pasados sin orden)
+  const overdueEvts = events.filter(ev => {
+    if (ev.serial !== eq.serial) return false;
+    const evDate = new Date(ev.date);
+    return evDate < today;
+  });
+  score += Math.min(overdueEvts.length * 8, 24);
+
+  // 4. Frecuencia de mantenimiento alta pero sin registros recientes
+  if (eq.frequency && eq.frequency <= 3 && eqOrders.length < 2) score += 10;
+
+  // 5. Equipo crítico (campo del inventario)
+  if (eq.critical) score += 10;
+
+  // 6. Sin proveedor registrado (sin soporte técnico identificado)
+  if (!eq.provider || eq.provider.trim() === '') score += 5;
+
+  score = Math.min(score, 100);
+
+  let level, label;
+  if      (score >= 75) { level = 'critical'; label = 'CRÍTICO'; }
+  else if (score >= 50) { level = 'high';     label = 'ALTO'; }
+  else if (score >= 25) { level = 'medium';   label = 'MEDIO'; }
+  else                  { level = 'low';      label = 'BAJO'; }
+
+  return { score, level, label };
+}
+
+function runRiskAnalysis() {
+  const { inventory, orders, events } = loadData();
+  const riskGrid = document.getElementById('riskGrid');
+
+  if (!inventory.length) {
+    riskGrid.innerHTML = '<p style="color:var(--muted);padding:20px;">No hay equipos en el inventario. Agrega equipos desde el módulo principal.</p>';
+    return;
+  }
+
+  // Compute scores
+  const results = inventory.map(eq => ({
+    eq,
+    ...calcRiskScore(eq, events, orders)
+  })).sort((a, b) => b.score - a.score);
+
+  // Update summary
+  document.getElementById('sTotal').textContent    = results.length;
+  document.getElementById('sCritical').textContent = results.filter(r=>r.level==='critical').length;
+  document.getElementById('sHigh').textContent     = results.filter(r=>r.level==='high').length;
+  document.getElementById('sMedium').textContent   = results.filter(r=>r.level==='medium').length;
+  document.getElementById('sLow').textContent      = results.filter(r=>r.level==='low').length;
+  document.getElementById('riskBadge').textContent = `${results.length} equipos analizados`;
+
+  // Alert banners
+  const criticals = results.filter(r=>r.level==='critical');
+  const highs     = results.filter(r=>r.level==='high');
+  const banner    = document.getElementById('alertBanner');
+  banner.innerHTML = '';
+
+  if (criticals.length) {
+    const names = criticals.map(r=>`<strong>${r.eq.type} ${r.eq.brand} ${r.eq.model}</strong>`).join(', ');
+    banner.innerHTML += `<div class="ia-alert critical">🚨 <div><strong>${criticals.length} equipo(s) en estado CRÍTICO</strong> requieren atención inmediata: ${names}</div></div>`;
+  }
+  if (highs.length) {
+    banner.innerHTML += `<div class="ia-alert warning">⚠️ <div><strong>${highs.length} equipo(s) con riesgo ALTO.</strong> Se recomienda programar mantenimiento en los próximos 7 días.</div></div>`;
+  }
+
+  // Render cards
+  riskGrid.innerHTML = '';
+  results.forEach(r => {
+    const { eq, score, level, label } = r;
+
+    // Find last maintenance date
+    const eqOrders = JSON.parse(localStorage.getItem(KEY_ORD)||'[]').filter(o =>
+      o.status==='Cerrada' && (
+        (o.equipment && o.equipment.serial===eq.serial) ||
+        String(o.eq).includes(eq.serial)
+      )
+    );
+    const lastMaint = eqOrders.length
+      ? eqOrders.map(o=>o.date).sort().reverse()[0]
+      : 'Sin registro';
+
+    const pendingEvts = JSON.parse(localStorage.getItem(KEY_EVT)||'[]').filter(ev=>{
+      if(ev.serial!==eq.serial) return false;
+      return new Date(ev.date) >= new Date();
+    }).length;
+
+    const card = document.createElement('div');
+    card.className = 'risk-card';
+    card.innerHTML = `
+      <div class="risk-header">
+        <div>
+          <div class="risk-eq-name">${eq.type} — ${eq.brand} ${eq.model}</div>
+          <div class="risk-eq-area">📍 ${eq.area} &nbsp;·&nbsp; Serie: ${eq.serial}</div>
+        </div>
+        <div class="risk-score">
+          <div class="risk-circle ${level}">${score}</div>
+          <div class="risk-label ${level}">${label}</div>
+        </div>
+      </div>
+      <div class="risk-bar-wrap">
+        <div class="risk-bar-bg">
+          <div class="risk-bar-fill ${level}" style="width:0%" data-width="${score}%"></div>
+        </div>
+      </div>
+      <div class="risk-meta">
+        <span>Estado: ${eq.status}</span>
+        <span>Último mant.: ${lastMaint}</span>
+        <span>Próximos eventos: ${pendingEvts}</span>
+        ${eq.critical ? '<span style="color:#7c3aed;font-weight:700;">⚡ Crítico</span>' : ''}
+      </div>
+    `;
+    riskGrid.appendChild(card);
+
+    // Animate bar
+    setTimeout(() => {
+      const fill = card.querySelector('.risk-bar-fill');
+      if (fill) fill.style.width = fill.dataset.width;
+    }, 100);
+  });
+}
+
+// ─────────────────────────────────────────────
+// AI CHAT
+// ─────────────────────────────────────────────
+const chatHistory = [];
+
+function buildSystemPrompt() {
+  const { inventory, orders, events } = loadData();
+  const today = new Date().toISOString().slice(0,10);
+
+  // Build concise context
+  const equipSummary = inventory.map(eq => {
+    const r = calcRiskScore(eq, events, orders);
+    const eqOrds = orders.filter(o=>(o.equipment&&o.equipment.serial===eq.serial)||String(o.eq).includes(eq.serial));
+    const lastMaint = eqOrds.filter(o=>o.status==='Cerrada').map(o=>o.date).sort().reverse()[0] || 'nunca';
+    const overdueEvts = events.filter(ev=>ev.serial===eq.serial && new Date(ev.date)<new Date()).length;
+    return `- ${eq.type} ${eq.brand} ${eq.model} | Serie:${eq.serial} | Área:${eq.area} | Estado:${eq.status} | RiesgoIA:${r.score}/100 (${r.label}) | ÚltimoMant:${lastMaint} | EventosVencidos:${overdueEvts} | Frecuencia:${eq.frequency||0}meses`;
+  }).join('\n');
+
+  const openOrders = orders.filter(o=>o.status!=='Cerrada').length;
+  const overdueTotal = events.filter(ev=>new Date(ev.date)<new Date()).length;
+
+  return `Eres el asistente de Bio-Inteligencia Artificial del Departamento de Ingeniería Biomédica del Hospital Civil Nuevo de Guadalajara "Dr. Juan I. Menchaca". 
+
+Tu rol es analizar el estado del parque tecnológico del hospital y proporcionar recomendaciones clínicas basadas en datos reales del sistema.
+
+DATOS DEL SISTEMA (fecha actual: ${today}):
+Total equipos: ${inventory.length}
+Órdenes abiertas: ${openOrders}
+Eventos de mantenimiento vencidos: ${overdueTotal}
+
+INVENTARIO CON SCORES DE RIESGO:
+${equipSummary || 'Sin equipos registrados.'}
+
+INSTRUCCIONES:
+- Responde en español, de forma profesional pero clara
+- Usa los datos reales del sistema para tus respuestas
+- Prioriza siempre la seguridad del paciente
+- Cuando menciones equipos críticos, sé específico (tipo, modelo, serie, área)
+- Si propones planes de acción, sé concreto y ordenado por prioridad
+- Mantén respuestas concisas pero completas (máx 300 palabras)
+- Usa emojis de forma moderada para facilitar la lectura`;
+}
+
+async function sendChat(overrideText) {
+  const input = document.getElementById('chatInput');
+  const text  = overrideText || input.value.trim();
+  if (!text) return;
+
+  // Hide empty state
+  document.getElementById('chatEmpty').style.display = 'none';
+  document.getElementById('btnSend').disabled = true;
+
+  // Add user message
+  chatHistory.push({ role: 'user', content: text });
+  appendChatMsg('user', text);
+  if (!overrideText) input.value = '';
+
+  // Typing indicator
+  const typingEl = appendTyping();
+
+  try {
+    const response = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: chatHistory
+      })
+    });
+
+    const data = await response.json();
+    typingEl.remove();
+
+    const reply = data.content
+      ? data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n')
+      : '⚠️ No se pudo obtener respuesta. Verifica la conexión.';
+
+    chatHistory.push({ role: 'assistant', content: reply });
+    appendChatMsg('assistant', reply);
+
+  } catch (err) {
+    typingEl.remove();
+    const errMsg = '⚠️ Error de conexión con el servidor de IA. Verifica tu configuración de red.';
+    chatHistory.push({ role: 'assistant', content: errMsg });
+    appendChatMsg('assistant', errMsg);
+  }
+
+  document.getElementById('btnSend').disabled = false;
+}
+
+function appendChatMsg(role, text) {
+  const wrap = document.getElementById('chatWrap');
+  const div  = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `
+    <div class="chat-avatar">${role === 'user' ? '👤' : '🤖'}</div>
+    <div class="chat-bubble">${escapeHtml(text)}</div>
+  `;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const wrap = document.getElementById('chatWrap');
+  const div  = document.createElement('div');
+  div.className = 'chat-msg assistant';
+  div.innerHTML = `
+    <div class="chat-avatar">🤖</div>
+    <div class="chat-bubble">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  `;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>');
+}
+
+// Enter key to send
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+// Quick chip clicks
+document.querySelectorAll('.quick-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    sendChat(chip.dataset.q);
+  });
+});
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  runRiskAnalysis();
+});
+</script>
+</body>
+</html>

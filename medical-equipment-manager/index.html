@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mantenimiento Predictivo - Hospital Civil</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="loginView" class="login-screen">
+    <div class="login-box">
+      <div class="login-logo-container">
+    <img src="logo.png" alt="Hospital Civil Nuevo de Guadalajara" class="login-logo">
+</div>
+
+
+      <h2>Mantenimiento Predictivo</h2>
+      <p>Hospital Civil Nuevo de Guadalajara</p>
+      <form id="loginForm">
+        <input id="loginUser" type="text" placeholder="Usuario" required />
+        <input id="loginPass" type="password" placeholder="Contraseña" required />
+        <button type="submit" class="btn">Entrar</button>
+        <div style="margin-top:10px;font-size:13px;">
+          <a href="register.html" class="muted-link">¿No tienes cuenta? Regístrate</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app" class="app hidden">
+    <aside class="sidebar" id="sidebar">
+      <img src="assets/logo.png" alt="Logo" class="side-logo" onerror="this.style.display='none'"/>
+      <div class="brand">Mantenimiento<br/><span>Predictivo</span></div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard">Dashboard</button>
+        <button class="nav-item" data-view="inventory">Inventario</button>
+        <button class="nav-item" data-view="calendar">Calendario</button>
+        <button class="nav-item" data-view="orders">Órdenes</button>
+        <button class="nav-item" data-view="settings">Ajustes</button>
+        <button class="nav-item" onclick="location.href='ia.html'" style="background:linear-gradient(90deg,#e8e0ff,#ede9ff);color:#5b21b6;font-weight:700;">🤖 Bio-IA</button>
+        <button class="nav-item" onclick="location.href='politicas.html'" style="background:linear-gradient(90deg,#dbeafe,#eff6ff);color:#1d4ed8;font-weight:700;">📋 Políticas</button>
+      </nav>
+      <div class="sidebar-footer">Dept. Ingeniería Biomédica</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+    <div class="topbar-left">
+        <img src="logo.png" class="logo-topbar" alt="Logo Hospital">
+        <h1>  Hospital Civil  Nuevo de Guadalajara “Dr. Juan I. Menchaca”</h1>
+    </div>
+    <div class="user-info" id="userName">— ▼</div>
+</header>
+
+
+      <!-- VIEWS -->
+      <section id="view-dashboard" class="view">
+        <div class="cards">
+          <div class="card"><div class="card-title">Equipos</div><div id="equipCount" class="card-value">0</div></div>
+          <div class="card"><div class="card-title">Mantenimientos</div><div id="maintCount" class="card-value">0</div></div>
+          <div class="card"><div class="card-title">Órdenes abiertas</div><div id="orderCount" class="card-value">0</div></div>
+          <div class="card"><div class="card-title">Fuera de servicio</div><div id="outCount" class="card-value">0</div></div>
+        </div>
+
+        <h3>Órdenes recientes</h3>
+        <div class="table-wrap">
+          <table id="recentTable" class="table"><thead><tr><th>ID</th><th>Equipo</th><th>Tipo</th><th>Área</th><th>Estado</th></tr></thead><tbody></tbody></table>
+        </div>
+      </section>
+
+      <section id="view-inventory" class="view hidden">
+        <div class="view-header">
+          <h3>Inventario</h3>
+          <div class="controls">
+            <input id="searchInput" placeholder="Buscar por tipo, marca, modelo, serie o N° inventario" />
+            <button id="btnAddEquipment" class="btn">+ Agregar equipo</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="inventoryTable" class="table">
+            <thead><tr><th>Tipo</th><th>Marca</th><th>Modelo</th><th>No. Serie</th><th>No. Inventario</th><th>Área</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-calendar" class="view hidden">
+        <div class="view-header">
+          <h3>Calendario de mantenimientos</h3>
+          <div class="muted">Haga clic en una fecha para agendar o ver tareas.</div>
+        </div>
+
+        <div class="calendar-controls" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+          <label>Vista:
+            <select id="calendarViewSelect">
+              <option value="month" selected>Mes</option>
+              <option value="day">Día</option>
+            </select>
+          </label>
+
+          <label>Área:
+            <select id="filterArea"><option value="all">Todas</option></select>
+          </label>
+
+          <label>Tipo:
+            <select id="filterType"><option value="all">Todos</option><option value="Preventivo">Preventivo</option><option value="Correctivo">Correctivo</option><option value="Predictivo">Predictivo</option></select>
+          </label>
+
+          <label>Buscar equipo:
+            <input id="filterEq" placeholder="marca/modelo/serie" />
+          </label>
+        </div>
+
+        <div id="calendar" class="calendar"></div>
+        <div id="calendarList" class="calendar-list muted"></div>
+      </section>
+
+      <section id="view-orders" class="view hidden">
+        <div class="view-header">
+          <h3>Órdenes de trabajo</h3>
+          <button id="btnNewOrder" class="btn">+ Nueva orden</button>
+        </div>
+        <div class="table-wrap">
+          <table id="ordersTable" class="table">
+            <thead><tr><th>ID</th><th>Equipo</th><th>Tipo</th><th>Técnico</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view hidden">
+        <h3>Ajustes</h3>
+        <button id="btnRestore" class="btn secondary">Restaurar última copia de seguridad</button>
+        <div class="muted" style="margin-top:10px">La aplicación mantiene hasta 5 respaldos automáticos.</div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <!-- Add equipment (modalAddEquipment) - 3-column layout -->
+  <div id="modalAddEquipment" class="modal hidden">
+    <div class="modal-content">
+      <h4>Agregar Equipo</h4>
+      <form id="formAddEquipment" class="form-grid-3">
+        <!-- row 1 -->
+        <div class="field"><label>Tipo de equipo<input name="type" required></label></div>
+        <div class="field"><label>Marca<input name="brand" required></label></div>
+        <div class="field"><label>Modelo<input name="model" required></label></div>
+
+        <!-- row 2 -->
+        <div class="field"><label>No. Serie<input name="serial" required></label></div>
+        <div class="field"><label>No. Inventario<input name="inventory" required></label></div>
+        <div class="field"><label>Área<input name="area" required></label></div>
+
+        <!-- row 3 -->
+        <div class="field"><label>Frecuencia (meses)
+          <select name="frequency"><option value="0">Ninguna</option><option value="1">1</option><option value="3" selected>3</option><option value="6">6</option><option value="12">12</option></select>
+        </label></div>
+
+        <div class="field"><label>Estado
+          <select name="status"><option>Operativo</option><option>En mantenimiento</option><option>Fuera de servicio</option></select>
+        </label></div>
+
+        <div class="field"><label>Proveedor<input name="provider" placeholder="Proveedor / Marca suministradora"></label></div>
+
+        <!-- optional full-width notes -->
+        <div style="grid-column:1 / -1">
+          <label>Notas (opcional)<textarea name="notes" rows="2"></textarea></label>
+        </div>
+
+        <div class="modal-actions" style="grid-column:1 / -1; justify-content:flex-end;">
+          <button type="submit" class="btn">Guardar</button>
+          <button type="button" id="cancelAddEquipment" class="btn secondary">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Calendar event (form) -->
+
+  <div id="modalCalEvent" class="modal hidden">
+    <div class="modal-content">
+      <h4>Agendar mantenimiento</h4>
+      <form id="formCalEvent">
+        <label>Equipo
+          <select name="eq" id="calEqSelect"></select>
+        </label>
+
+        <label>Tipo
+          <select name="type" id="calType">
+            <option>Preventivo</option>
+            <option>Correctivo</option>
+            <option>Predictivo</option>
+          </select>
+        </label>
+
+        <label>Técnico asignado
+          <select name="technician" id="calTechnician"></select>
+        </label>
+
+        <label>Prioridad
+          <select name="priority" id="calPriority">
+            <option value="normal" selected>Normal</option>
+            <option value="alta">Alta</option>
+            <option value="critica">Crítica</option>
+          </select>
+        </label>
+
+        <label>Comentarios<textarea name="notes" rows="3"></textarea></label>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn">Guardar</button>
+          <button type="button" id="cancelCal" class="btn secondary">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Day events modal (list) -->
+  <div id="modalDayEvents" class="modal hidden">
+    <div class="modal-content" style="max-width:700px;">
+      <h4>Mantenimientos del día</h4>
+      <div id="dayEventsContent" style="max-height:420px; overflow:auto; margin-top:8px;"></div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="btnAddEventFromDay" class="btn">Agregar mantenimiento</button>
+        <button id="closeDayEvents" class="btn secondary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New order (grid) -->
+  <div id="modalNewOrder" class="modal hidden">
+    <div class="modal-content">
+      <h4>Nueva Orden</h4>
+      <form id="formNewOrder" class="form-grid">
+        <div>
+          <label>Equipo (selecciona)<select name="eq" required></select></label>
+          <label>Tipo
+            <select name="otype"><option>Preventivo</option><option>Correctivo</option><option>Predictivo</option></select>
+          </label>
+          <label>Técnico<input name="tech" required></label>
+        </div>
+        <div>
+          <label>Fecha<input type="date" name="date" required></label>
+          <label>Observaciones<textarea name="notes" rows="6"></textarea></label>
+        </div>
+
+        <div class="modal-actions" style="grid-column:1 / -1; justify-content:flex-end;">
+          <button type="submit" class="btn">Crear orden</button>
+          <button type="button" id="cancelNewOrder" class="btn secondary">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Order -->
+  <div id="modalEditOrder" class="modal hidden">
+    <div class="modal-content">
+      <h4>Editar Orden</h4>
+      <form id="formEditOrder">
+        <label>Equipo<input name="eq"></label>
+        <label>Técnico<input name="tech"></label>
+        <label>Observaciones<textarea name="notes" rows="3"></textarea></label>
+        <div class="modal-actions">
+          <button type="submit" class="btn">Guardar</button>
+          <button type="button" id="cancelEdit" class="btn secondary">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Order Detail (close & download) -->
+  <div id="modalOrderDetail" class="modal hidden">
+    <div class="modal-content">
+      <h4>Detalle de Orden</h4>
+      <div id="orderDetailContent"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="btnCloseDownload" class="btn">Cerrar orden y descargar PDF</button>
+        <button id="btnCloseDetail" class="btn secondary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History modal -->
+  <div id="modalHistory" class="modal hidden">
+    <div class="modal-content">
+      <h4>Historial del equipo</h4>
+      <div id="historyContent" style="max-height:300px;overflow:auto"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px">
+        <button id="closeHistory" class="btn secondary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- jsPDF (para PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Políticas Públicas — Mantenimiento Predictivo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    .pp-layout{display:flex;min-height:100vh}
+    .pp-sidebar{width:260px;background:linear-gradient(180deg,#fff,#f3f7fb);padding:18px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:12px}
+    .pp-main{flex:1;display:flex;flex-direction:column;background:var(--bg)}
+    .pp-topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);background:#fff}
+    .pp-topbar h1{font-size:16px;font-weight:700;color:#073b6b;display:flex;align-items:center;gap:8px}
+    .pp-badge{background:linear-gradient(135deg,#0a4488,#1a6bb5);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px}
+    .pp-content{padding:20px;flex:1;overflow:auto}
+    .pp-tabs{display:flex;gap:4px;margin-bottom:20px;background:#fff;border-radius:10px;padding:5px;border:1px solid var(--border);width:fit-content;flex-wrap:wrap}
+    .pp-tab{padding:8px 14px;border-radius:7px;border:0;background:transparent;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap}
+    .pp-tab.active{background:var(--accent);color:#fff}
+    .pp-tab:hover:not(.active){background:#f1f5f9;color:#073b6b}
+    .pp-section{display:none}
+    .pp-section.active{display:block}
+    .pp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+    .pp-card{background:#fff;border-radius:10px;border:1px solid var(--border);padding:14px;text-align:center;box-shadow:0 2px 8px rgba(2,6,23,0.04)}
+    .pp-card .val{font-size:28px;font-weight:800;color:#07203a}
+    .pp-card .lbl{font-size:12px;color:var(--muted);margin-top:2px}
+    .comp-table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+    .comp-table th{background:#eef4ff;color:#073b6b;font-weight:700;font-size:13px;padding:11px 14px;text-align:left}
+    .comp-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f1f5f9}
+    .comp-table tr:last-child td{border-bottom:0}
+    .comp-table tr:hover td{background:#f8fafc}
+    .prog-wrap{background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;min-width:80px}
+    .prog-fill{height:100%;border-radius:6px;transition:width .8s ease}
+    .prog-fill.green{background:linear-gradient(90deg,#16a34a,#4ade80)}
+    .prog-fill.yellow{background:linear-gradient(90deg,#d97706,#fbbf24)}
+    .prog-fill.red{background:linear-gradient(90deg,#dc2626,#f87171)}
+    .alert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin-bottom:20px}
+    .alert-card{background:#fff;border-radius:10px;border:1px solid var(--border);padding:14px;box-shadow:0 2px 8px rgba(2,6,23,0.04)}
+    .alert-card.critical{border-left:4px solid #dc2626}
+    .alert-card.warning{border-left:4px solid #d97706}
+    .alert-card.ok{border-left:4px solid #16a34a}
+    .ac-name{font-weight:700;font-size:14px;color:#07203a}
+    .ac-area{font-size:12px;color:var(--muted);margin-top:2px}
+    .ac-meta{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.8}
+    .impact-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .impact-box{background:#fff;border-radius:10px;border:1px solid var(--border);padding:18px;box-shadow:0 2px 8px rgba(2,6,23,0.04);margin-bottom:14px}
+    .impact-box h4{font-size:14px;font-weight:700;color:#073b6b;margin-bottom:12px}
+    .gauge-wrap{display:flex;align-items:center;gap:16px;margin-bottom:10px}
+    .gauge-circle{width:72px;height:72px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff}
+    .gauge-circle.green{background:linear-gradient(135deg,#16a34a,#22c55e)}
+    .gauge-circle.yellow{background:linear-gradient(135deg,#d97706,#fbbf24)}
+    .gauge-circle.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+    .impact-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+    .impact-row:last-child{border-bottom:0}
+    .ir-label{color:var(--muted)}
+    .ir-val{font-weight:700;color:#07203a}
+    .nom-item{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f1f5f9}
+    .nom-item:last-child{border-bottom:0}
+    .nom-badge{background:#eef4ff;color:#0a4488;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+    .nom-desc{font-size:13px;color:#374151}
+    .report-form{background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;margin-bottom:20px}
+    .report-form h4{font-weight:700;color:#073b6b;margin-bottom:14px}
+    .rf-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .rf-field label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px}
+    .rf-field input,.rf-field select,.rf-field textarea{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border);font-size:13px;outline:none}
+    .btn-report{background:linear-gradient(135deg,#0a4488,#1a5faa);color:#fff;border:0;border-radius:9px;padding:11px 22px;font-weight:700;font-size:14px;cursor:pointer}
+    .sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+    .sec-hdr h3{font-size:15px;font-weight:700;color:#073b6b}
+    .sec-badge{background:#eef6ff;color:#0a4488;border-radius:6px;font-size:12px;font-weight:600;padding:3px 8px}
+    .tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600}
+    .tag.green{background:#dcfce7;color:#166534}
+    .tag.yellow{background:#fef9c3;color:#854d0e}
+    .tag.red{background:#fee2e2;color:#991b1b}
+    .tag.blue{background:#dbeafe;color:#1e40af}
+    .nav-item-pp{background:linear-gradient(90deg,#dbeafe,#eff6ff);color:#1d4ed8 !important;font-weight:700}
+    .empty-state{text-align:center;padding:40px;color:var(--muted)}
+    @media(max-width:768px){.pp-sidebar{display:none}.impact-grid{grid-template-columns:1fr}.rf-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="pp-layout">
+  <aside class="pp-sidebar">
+    <img src="logo.png" alt="Logo" style="width:160px;border-radius:8px;margin:0 auto;display:block;" onerror="this.style.display='none'"/>
+    <div class="brand" style="margin-top:6px;">Mantenimiento<br/><span>Predictivo</span></div>
+    <nav class="nav" style="margin-top:10px;">
+      <button class="nav-item" onclick="location.href='index.html?view=dashboard'">Dashboard</button>
+      <button class="nav-item" onclick="location.href='index.html?view=inventory'">Inventario</button>
+      <button class="nav-item" onclick="location.href='index.html?view=calendar'">Calendario</button>
+      <button class="nav-item" onclick="location.href='index.html?view=orders'">Órdenes</button>
+      <button class="nav-item" onclick="location.href='index.html?view=settings'">Ajustes</button>
+      <button class="nav-item" onclick="location.href='ia.html'" style="background:linear-gradient(90deg,#e8e0ff,#ede9ff);color:#5b21b6;font-weight:700;">🤖 Bio-IA</button>
+      <button class="nav-item nav-item-pp active">📋 Políticas</button>
+    </nav>
+    <div class="sidebar-footer" style="margin-top:auto;">Dept. Ingeniería Biomédica</div>
+  </aside>
+
+  <main class="pp-main">
+    <header class="pp-topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="logo.png" style="height:36px;" onerror="this.style.display='none'">
+        <div>
+          <h1>Módulo de Políticas Públicas <span class="pp-badge">Normatividad</span></h1>
+          <div style="font-size:12px;color:var(--muted);">Hospital Civil Nuevo de Guadalajara "Dr. Juan I. Menchaca"</div>
+        </div>
+      </div>
+      <span id="ppUserName" style="font-size:13px;color:var(--muted);">—</span>
+    </header>
+
+    <div class="pp-content">
+      <div class="pp-tabs">
+        <button class="pp-tab active" data-tab="cumplimiento">📊 Cumplimiento</button>
+        <button class="pp-tab" data-tab="alertas">🔔 Alertas</button>
+        <button class="pp-tab" data-tab="impacto">📈 Impacto</button>
+        <button class="pp-tab" data-tab="reporte">📄 Reporte PDF</button>
+        <button class="pp-tab" data-tab="normativa">📚 Normativa</button>
+      </div>
+
+      <!-- TAB 1: CUMPLIMIENTO -->
+      <div class="pp-section active" id="tab-cumplimiento">
+        <div class="pp-cards" id="compCards"></div>
+        <div class="sec-hdr">
+          <h3>📋 Estado de Cumplimiento por Equipo</h3>
+          <span class="sec-badge" id="compBadge">Cargando…</span>
+        </div>
+        <div style="overflow:auto;">
+          <table class="comp-table">
+            <thead><tr><th>Equipo</th><th>Área</th><th>Estado</th><th>Último Mant.</th><th>Frecuencia</th><th>Cumplimiento</th><th>NOM-241</th><th>COFEPRIS</th></tr></thead>
+            <tbody id="compTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: ALERTAS -->
+      <div class="pp-section" id="tab-alertas">
+        <div class="sec-hdr">
+          <h3>🔔 Alertas de Vencimiento de Certificaciones</h3>
+          <span class="sec-badge" id="alertBadge">Cargando…</span>
+        </div>
+        <div class="pp-cards" id="alertSummaryCards"></div>
+        <div class="alert-grid" id="alertGrid"></div>
+      </div>
+
+      <!-- TAB 3: IMPACTO -->
+      <div class="pp-section" id="tab-impacto">
+        <div class="sec-hdr"><h3>📈 Evaluación de Impacto Tecnológico</h3></div>
+        <div class="impact-grid" id="impactGrid"></div>
+        <div class="impact-box"><h4>📊 Distribución por Área</h4><div id="areaDistrib"></div></div>
+        <div class="impact-box"><h4>⚙️ Indicadores de Gestión</h4><div id="gestionIndicators"></div></div>
+      </div>
+
+      <!-- TAB 4: REPORTE -->
+      <div class="pp-section" id="tab-reporte">
+        <div class="report-form">
+          <h4>📄 Generador de Reporte Oficial</h4>
+          <div class="rf-grid">
+            <div class="rf-field"><label>Nombre del responsable</label><input id="rp-responsable" placeholder="Ing. Juan Pérez"/></div>
+            <div class="rf-field"><label>Cargo</label><input id="rp-cargo" placeholder="Jefe de Ingeniería Biomédica"/></div>
+            <div class="rf-field"><label>Período</label>
+              <select id="rp-periodo">
+                <option>Enero – Marzo 2025</option><option>Abril – Junio 2025</option>
+                <option>Julio – Septiembre 2025</option><option selected>Octubre – Diciembre 2025</option>
+                <option>Enero – Marzo 2026</option>
+              </select>
+            </div>
+            <div class="rf-field"><label>Tipo de reporte</label>
+              <select id="rp-tipo">
+                <option>Reporte Trimestral de Cumplimiento</option>
+                <option>Informe de Gestión Tecnológica</option>
+                <option>Reporte para COFEPRIS</option>
+                <option>Reporte de Mantenimiento Preventivo</option>
+              </select>
+            </div>
+            <div class="rf-field" style="grid-column:1/-1;"><label>Observaciones adicionales</label><textarea id="rp-obs" rows="3" placeholder="Notas o comentarios…"></textarea></div>
+          </div>
+          <button class="btn-report" onclick="generateCompliancePDF()">📥 Generar Reporte PDF Oficial</button>
+        </div>
+        <div class="impact-box"><h4>👁 Vista previa del reporte</h4><div id="reportPreview" style="font-size:13px;color:#374151;line-height:1.8;"></div></div>
+      </div>
+
+      <!-- TAB 5: NORMATIVA -->
+      <div class="pp-section" id="tab-normativa">
+        <div class="impact-box">
+          <h4>📚 Marco Normativo Aplicable — Equipos Biomédicos en México</h4>
+          <div class="nom-item"><span class="nom-badge">NOM-241-SSA1-2012</span><div class="nom-desc"><strong>Buenas Prácticas de Fabricación para Dispositivos Médicos.</strong> Establece requisitos mínimos de calidad y seguridad que deben cumplir los dispositivos médicos fabricados en México.</div></div>
+          <div class="nom-item"><span class="nom-badge">NOM-003-SSA3-2010</span><div class="nom-desc"><strong>Para la práctica de hemodiálisis.</strong> Incluye especificaciones sobre equipos de hemodiálisis, su mantenimiento y calibración periódica obligatoria.</div></div>
+          <div class="nom-item"><span class="nom-badge">NOM-197-SSA1-2000</span><div class="nom-desc"><strong>Requisitos mínimos de infraestructura y equipamiento.</strong> Define estándares mínimos de equipos biomédicos por tipo de unidad médica.</div></div>
+          <div class="nom-item"><span class="nom-badge">COFEPRIS</span><div class="nom-desc"><strong>Comisión Federal para la Protección contra Riesgos Sanitarios.</strong> Regula el registro, importación y uso de dispositivos médicos. Todo equipo debe contar con registro sanitario vigente.</div></div>
+          <div class="nom-item"><span class="nom-badge">ISO 13485:2016</span><div class="nom-desc"><strong>Sistemas de gestión de la calidad para dispositivos médicos.</strong> Estándar internacional adoptado en México para la gestión de calidad de equipos biomédicos.</div></div>
+          <div class="nom-item"><span class="nom-badge">Ley Gral. Salud Art. 391</span><div class="nom-desc"><strong>Equipos y materiales para la salud.</strong> Los equipos deben mantenerse en condiciones que garanticen su correcto funcionamiento y seguridad para el paciente.</div></div>
+        </div>
+        <div class="impact-box">
+          <h4>📅 Periodicidad de Mantenimiento por Tipo de Equipo</h4>
+          <table class="comp-table" style="margin-top:8px;">
+            <thead><tr><th>Tipo de equipo</th><th>Frecuencia mínima</th><th>Norma aplicable</th><th>Prioridad</th></tr></thead>
+            <tbody>
+              <tr><td>Ventiladores mecánicos</td><td>Cada 3 meses</td><td>NOM-241 / ISO 13485</td><td><span class="tag red">Crítica</span></td></tr>
+              <tr><td>Incubadoras neonatales</td><td>Cada 3 meses</td><td>NOM-197 / COFEPRIS</td><td><span class="tag red">Crítica</span></td></tr>
+              <tr><td>Monitores de signos vitales</td><td>Cada 6 meses</td><td>NOM-197</td><td><span class="tag yellow">Alta</span></td></tr>
+              <tr><td>Desfibriladores</td><td>Cada 3 meses</td><td>NOM-241 / ISO 13485</td><td><span class="tag red">Crítica</span></td></tr>
+              <tr><td>Bombas de infusión</td><td>Cada 6 meses</td><td>NOM-241</td><td><span class="tag yellow">Alta</span></td></tr>
+              <tr><td>Equipos de laboratorio</td><td>Anual + calibración</td><td>NOM-007-SSA3</td><td><span class="tag blue">Media</span></td></tr>
+              <tr><td>Camas hospitalarias</td><td>Anual</td><td>NOM-197</td><td><span class="tag green">Normal</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const KEY_INV='mp_inv_v1',KEY_ORD='mp_ord_v1',KEY_EVT='mp_evt_v1',KEY_SESSION='mp_logged_user';
+
+(function(){
+  const sess=JSON.parse(localStorage.getItem(KEY_SESSION)||'null');
+  if(!sess){location.replace('index.html');return;}
+  document.getElementById('ppUserName').textContent=(sess.name||sess.username)+' ▾';
+})();
+
+function loadData(){
+  return{
+    inventory:JSON.parse(localStorage.getItem(KEY_INV)||'[]'),
+    orders:JSON.parse(localStorage.getItem(KEY_ORD)||'[]'),
+    events:JSON.parse(localStorage.getItem(KEY_EVT)||'[]'),
+  };
+}
+
+document.querySelectorAll('.pp-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.pp-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.pp-section').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+    renderTab(tab.dataset.tab);
+  });
+});
+
+function renderTab(name){
+  if(name==='cumplimiento') renderCumplimiento();
+  if(name==='alertas')      renderAlertas();
+  if(name==='impacto')      renderImpacto();
+  if(name==='reporte')      renderReportPreview();
+}
+
+function getLastMaint(eq,orders){
+  const closed=orders.filter(o=>o.status==='Cerrada'&&((o.equipment&&o.equipment.serial===eq.serial)||String(o.eq||'').includes(eq.serial)));
+  if(!closed.length) return null;
+  return closed.map(o=>o.date).sort().reverse()[0];
+}
+function daysSince(dateStr){
+  if(!dateStr) return 9999;
+  return Math.floor((new Date()-new Date(dateStr))/(1000*60*60*24));
+}
+function complianceScore(eq,orders){
+  const last=getLastMaint(eq,orders);
+  const days=daysSince(last);
+  const freqDays=(eq.frequency||12)*30;
+  if(!last) return{pct:0,level:'red',label:'Sin registro'};
+  const pct=Math.max(0,Math.round((1-days/freqDays)*100));
+  if(pct>=70) return{pct,level:'green',label:'Cumple'};
+  if(pct>=40) return{pct,level:'yellow',label:'En riesgo'};
+  return{pct,level:'red',label:'Incumple'};
+}
+function nom241Status(eq,orders){
+  const last=getLastMaint(eq,orders);
+  if(!last) return{ok:false,label:'No verificado'};
+  const days=daysSince(last);
+  const freqDays=(eq.frequency||6)*30;
+  return days<=freqDays?{ok:true,label:'Vigente'}:{ok:false,label:'Vencido'};
+}
+
+function renderCumplimiento(){
+  const{inventory,orders}=loadData();
+  const tbody=document.getElementById('compTableBody');
+  const cards=document.getElementById('compCards');
+  const badge=document.getElementById('compBadge');
+  if(!inventory.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state">📭 No hay equipos registrados.</div></td></tr>`;return;}
+  let ok=0,risk=0,fail=0;
+  tbody.innerHTML='';
+  inventory.forEach(eq=>{
+    const comp=complianceScore(eq,orders);
+    const nom=nom241Status(eq,orders);
+    const last=getLastMaint(eq,orders)||'—';
+    if(comp.level==='green') ok++;
+    else if(comp.level==='yellow') risk++;
+    else fail++;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><strong>${eq.type}</strong><br><span style="font-size:11px;color:var(--muted)">${eq.brand} ${eq.model} · ${eq.serial}</span></td>
+      <td>${eq.area}</td>
+      <td><span class="tag ${eq.status==='Operativo'?'green':eq.status==='En mantenimiento'?'yellow':'red'}">${eq.status}</span></td>
+      <td>${last}</td>
+      <td>${eq.frequency?'Cada '+eq.frequency+' mes(es)':'No definida'}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="prog-wrap" style="flex:1;"><div class="prog-fill ${comp.level}" style="width:${comp.pct}%"></div></div>
+          <span style="font-size:12px;font-weight:700;">${comp.pct}%</span>
+        </div>
+        <span class="tag ${comp.level}" style="margin-top:4px;display:inline-block;">${comp.label}</span>
+      </td>
+      <td><span class="tag ${nom.ok?'green':'red'}">${nom.label}</span></td>
+      <td><span class="tag ${eq.provider?'blue':'yellow'}">${eq.provider?'Registrado':'Pendiente'}</span></td>`;
+    tbody.appendChild(tr);
+  });
+  badge.textContent=`${inventory.length} equipos evaluados`;
+  const totalPct=inventory.length?Math.round(ok/inventory.length*100):0;
+  cards.innerHTML=`
+    <div class="pp-card"><div class="val">${inventory.length}</div><div class="lbl">Total equipos</div></div>
+    <div class="pp-card"><div class="val" style="color:#16a34a">${ok}</div><div class="lbl">En cumplimiento</div></div>
+    <div class="pp-card"><div class="val" style="color:#d97706">${risk}</div><div class="lbl">En riesgo</div></div>
+    <div class="pp-card"><div class="val" style="color:#dc2626">${fail}</div><div class="lbl">Incumplimiento</div></div>
+    <div class="pp-card"><div class="val" style="color:${totalPct>=70?'#16a34a':totalPct>=40?'#d97706':'#dc2626'}">${totalPct}%</div><div class="lbl">Cumplimiento global</div></div>`;
+}
+
+function renderAlertas(){
+  const{inventory,orders,events}=loadData();
+  const grid=document.getElementById('alertGrid');
+  const badge=document.getElementById('alertBadge');
+  const sumCards=document.getElementById('alertSummaryCards');
+  const today=new Date();
+  let critical=0,warning=0,ok=0;
+  grid.innerHTML='';
+  if(!inventory.length){grid.innerHTML=`<div class="empty-state">🔔 No hay equipos registrados.</div>`;return;}
+  const sorted=inventory.map(eq=>{
+    const last=getLastMaint(eq,orders);
+    const freqDays=(eq.frequency||6)*30;
+    const nextDate=last?new Date(new Date(last).getTime()+freqDays*86400000):new Date(today.getTime()-1);
+    const daysLeft=Math.ceil((nextDate-today)/86400000);
+    const nextEvt=events.filter(ev=>ev.serial===eq.serial&&new Date(ev.date)>=today).map(ev=>ev.date).sort()[0];
+    return{eq,daysLeft,nextEvt};
+  }).sort((a,b)=>a.daysLeft-b.daysLeft);
+  sorted.forEach(({eq,daysLeft,nextEvt})=>{
+    let cardClass,icon;
+    if(daysLeft<=0){cardClass='critical';critical++;icon='🚨';}
+    else if(daysLeft<=30){cardClass='warning';warning++;icon='🔔';}
+    else{cardClass='ok';ok++;icon='✅';}
+    const last=getLastMaint(eq,orders)||'Sin registro';
+    const daysLabel=daysLeft<=0?`${Math.abs(daysLeft)} días vencido`:`${daysLeft} días restantes`;
+    const daysColor=daysLeft<=0?'#dc2626':daysLeft<=30?'#d97706':'#16a34a';
+    const card=document.createElement('div');
+    card.className=`alert-card ${cardClass}`;
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div><div class="ac-name">${eq.type} — ${eq.brand} ${eq.model}</div><div class="ac-area">📍 ${eq.area} · Serie: ${eq.serial}</div></div>
+        <span style="font-size:22px;">${icon}</span>
+      </div>
+      <div style="font-size:20px;font-weight:800;color:${daysColor}">${daysLabel}</div>
+      <div class="ac-meta">
+        Último mant.: <strong>${last}</strong><br>
+        Frecuencia: <strong>Cada ${eq.frequency||'?'} mes(es)</strong><br>
+        ${nextEvt?`Próximo evento: <strong>${nextEvt}</strong>`:'<span style="color:#dc2626">⚠️ Sin evento agendado</span>'}
+        <div style="margin-top:6px;">
+          <span class="tag ${eq.status==='Operativo'?'green':'yellow'}">${eq.status}</span>
+          ${eq.critical?'<span class="tag red" style="margin-left:4px;">Crítico</span>':''}
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+  badge.textContent=`${critical} vencido(s) · ${warning} próximo(s) · ${ok} al corriente`;
+  sumCards.innerHTML=`
+    <div class="pp-card"><div class="val" style="color:#dc2626">${critical}</div><div class="lbl">Vencidos</div></div>
+    <div class="pp-card"><div class="val" style="color:#d97706">${warning}</div><div class="lbl">Próximos 30 días</div></div>
+    <div class="pp-card"><div class="val" style="color:#16a34a">${ok}</div><div class="lbl">Al corriente</div></div>`;
+}
+
+function renderImpacto(){
+  const{inventory,orders,events}=loadData();
+  const grid=document.getElementById('impactGrid');
+  const total=inventory.length;
+  const operativo=inventory.filter(e=>e.status==='Operativo').length;
+  const fuera=inventory.filter(e=>e.status==='Fuera de servicio').length;
+  const mant=inventory.filter(e=>e.status==='En mantenimiento').length;
+  const criticos=inventory.filter(e=>e.critical).length;
+  const dispPct=total?Math.round(operativo/total*100):0;
+  const closedOrd=orders.filter(o=>o.status==='Cerrada').length;
+  const openOrd=orders.filter(o=>o.status!=='Cerrada').length;
+  const dispColor=dispPct>=80?'green':dispPct>=60?'yellow':'red';
+  const ordPct=orders.length?Math.round(closedOrd/orders.length*100):0;
+  const ordColor=ordPct>=70?'green':'yellow';
+  grid.innerHTML=`
+    <div class="impact-box">
+      <h4>🏥 Disponibilidad del Parque Tecnológico</h4>
+      <div class="gauge-wrap">
+        <div class="gauge-circle ${dispColor}">${dispPct}%</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Tasa de disponibilidad operativa</div>
+          <div class="prog-wrap"><div class="prog-fill ${dispColor}" style="width:${dispPct}%"></div></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">${operativo} de ${total} equipos operativos</div>
+        </div>
+      </div>
+      <div class="impact-row"><span class="ir-label">Equipos operativos</span><span class="ir-val" style="color:#16a34a">${operativo}</span></div>
+      <div class="impact-row"><span class="ir-label">En mantenimiento</span><span class="ir-val" style="color:#d97706">${mant}</span></div>
+      <div class="impact-row"><span class="ir-label">Fuera de servicio</span><span class="ir-val" style="color:#dc2626">${fuera}</span></div>
+      <div class="impact-row"><span class="ir-label">Equipos críticos</span><span class="ir-val" style="color:#7c3aed">${criticos}</span></div>
+    </div>
+    <div class="impact-box">
+      <h4>📋 Gestión de Órdenes de Trabajo</h4>
+      <div class="gauge-wrap">
+        <div class="gauge-circle ${ordColor}">${ordPct}%</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Tasa de resolución de órdenes</div>
+          <div class="prog-wrap"><div class="prog-fill ${ordColor}" style="width:${ordPct}%"></div></div>
+        </div>
+      </div>
+      <div class="impact-row"><span class="ir-label">Total órdenes</span><span class="ir-val">${orders.length}</span></div>
+      <div class="impact-row"><span class="ir-label">Órdenes cerradas</span><span class="ir-val" style="color:#16a34a">${closedOrd}</span></div>
+      <div class="impact-row"><span class="ir-label">Órdenes abiertas</span><span class="ir-val" style="color:#d97706">${openOrd}</span></div>
+      <div class="impact-row"><span class="ir-label">Eventos programados</span><span class="ir-val">${events.length}</span></div>
+    </div>`;
+  const areas={};
+  inventory.forEach(eq=>{areas[eq.area]=areas[eq.area]||{total:0,op:0};areas[eq.area].total++;if(eq.status==='Operativo')areas[eq.area].op++;});
+  const areaDiv=document.getElementById('areaDistrib');
+  areaDiv.innerHTML='';
+  Object.entries(areas).sort((a,b)=>b[1].total-a[1].total).forEach(([area,data])=>{
+    const pct=Math.round(data.op/data.total*100);
+    const color=pct>=80?'green':pct>=50?'yellow':'red';
+    const row=document.createElement('div');row.className='impact-row';
+    row.innerHTML=`<span class="ir-label" style="min-width:140px;">${area}</span><div style="flex:1;margin:0 12px;"><div class="prog-wrap"><div class="prog-fill ${color}" style="width:${pct}%"></div></div></div><span class="ir-val">${data.op}/${data.total} (${pct}%)</span>`;
+    areaDiv.appendChild(row);
+  });
+  if(!Object.keys(areas).length) areaDiv.innerHTML='<div class="empty-state">📊 Sin datos de áreas.</div>';
+  const compGlobal=inventory.length?Math.round(inventory.filter(eq=>complianceScore(eq,orders).level==='green').length/inventory.length*100):0;
+  const overdueEvts=events.filter(ev=>new Date(ev.date)<new Date()).length;
+  document.getElementById('gestionIndicators').innerHTML=`
+    <div class="impact-row"><span class="ir-label">Índice de cumplimiento normativo</span><span class="ir-val" style="color:${compGlobal>=70?'#16a34a':'#d97706'}">${compGlobal}%</span></div>
+    <div class="impact-row"><span class="ir-label">Tasa de disponibilidad operativa</span><span class="ir-val" style="color:${dispColor==='green'?'#16a34a':dispColor==='yellow'?'#d97706':'#dc2626'}">${dispPct}%</span></div>
+    <div class="impact-row"><span class="ir-label">Eventos de mantenimiento vencidos</span><span class="ir-val" style="color:${overdueEvts?'#dc2626':'#16a34a'}">${overdueEvts}</span></div>
+    <div class="impact-row"><span class="ir-label">Equipos sin proveedor registrado</span><span class="ir-val" style="color:#d97706">${inventory.filter(e=>!e.provider||!e.provider.trim()).length}</span></div>
+    <div class="impact-row"><span class="ir-label">Cobertura de mant. preventivo</span><span class="ir-val">${inventory.filter(e=>e.frequency&&e.frequency>0).length} / ${inventory.length}</span></div>`;
+}
+
+function renderReportPreview(){
+  const{inventory,orders,events}=loadData();
+  const operativo=inventory.filter(e=>e.status==='Operativo').length;
+  const fuera=inventory.filter(e=>e.status==='Fuera de servicio').length;
+  const dispPct=inventory.length?Math.round(operativo/inventory.length*100):0;
+  const compGlobal=inventory.length?Math.round(inventory.filter(eq=>complianceScore(eq,orders).level==='green').length/inventory.length*100):0;
+  const openOrd=orders.filter(o=>o.status!=='Cerrada').length;
+  document.getElementById('reportPreview').innerHTML=`
+    <p><strong>Hospital Civil Nuevo de Guadalajara "Dr. Juan I. Menchaca"</strong><br>Departamento de Ingeniería Biomédica</p>
+    <hr style="margin:10px 0;border-color:#e2e8f0;">
+    <p><strong>1. Resumen Ejecutivo</strong><br>Se registran <strong>${inventory.length} equipos</strong> en el inventario hospitalario, con una tasa de disponibilidad operativa del <strong>${dispPct}%</strong> y un índice de cumplimiento normativo del <strong>${compGlobal}%</strong>.</p>
+    <p><strong>2. Estado del Parque Tecnológico</strong><br>• Equipos operativos: ${operativo}<br>• Equipos fuera de servicio: ${fuera}<br>• Órdenes de trabajo abiertas: ${openOrd}<br>• Eventos de mantenimiento programados: ${events.length}</p>
+    <p><strong>3. Cumplimiento Normativo (NOM-241 / COFEPRIS)</strong><br>El ${compGlobal}% de los equipos se encuentra dentro del período de mantenimiento establecido por la normatividad vigente.</p>
+    <p><strong>4. Recomendaciones</strong><br>
+    ${openOrd>0?`• Atender ${openOrd} orden(es) de trabajo pendiente(s).<br>`:''}
+    ${fuera>0?`• Gestionar la reparación o baja de ${fuera} equipo(s) fuera de servicio.<br>`:''}
+    • Mantener actualizado el registro de proveedores para todos los equipos.<br>
+    • Programar revisiones periódicas según NOM-241-SSA1-2012.</p>`;
+}
+
+async function generateCompliancePDF(){
+  const{inventory,orders}=loadData();
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const responsable=document.getElementById('rp-responsable').value||'No especificado';
+  const cargo=document.getElementById('rp-cargo').value||'No especificado';
+  const periodo=document.getElementById('rp-periodo').value;
+  const tipo=document.getElementById('rp-tipo').value;
+  const obs=document.getElementById('rp-obs').value||'Sin observaciones adicionales.';
+  const fecha=new Date().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'});
+  const operativo=inventory.filter(e=>e.status==='Operativo').length;
+  const fuera=inventory.filter(e=>e.status==='Fuera de servicio').length;
+  const dispPct=inventory.length?Math.round(operativo/inventory.length*100):0;
+  const compGlobal=inventory.length?Math.round(inventory.filter(eq=>complianceScore(eq,orders).level==='green').length/inventory.length*100):0;
+  const openOrd=orders.filter(o=>o.status!=='Cerrada').length;
+
+  // Header
+  doc.setFillColor(10,68,136);doc.rect(0,0,595,70,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
+  doc.text('Hospital Civil Nuevo de Guadalajara',30,28);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text('"Dr. Juan I. Menchaca" — Departamento de Ingeniería Biomédica',30,44);
+  doc.text('Sistema de Gestión de Tecnología Médica',30,58);
+  try{const r=await fetch('logo.png');if(r.ok){const b=await r.blob();const u=URL.createObjectURL(b);doc.addImage(u,'PNG',430,8,130,52);}}catch(e){}
+
+  // Title
+  doc.setFillColor(240,247,255);doc.rect(0,70,595,50,'F');
+  doc.setTextColor(7,32,58);doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text(tipo.toUpperCase(),30,92);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(80,100,130);
+  doc.text(`Período: ${periodo}   ·   Fecha: ${fecha}`,30,108);
+
+  let y=140;
+  // Info block
+  doc.setFillColor(248,250,252);doc.rect(30,y,535,50,'F');
+  doc.setTextColor(30,30,30);doc.setFontSize(10);
+  doc.setFont('helvetica','bold');doc.text('Responsable:',40,y+16);doc.setFont('helvetica','normal');doc.text(responsable,130,y+16);
+  doc.setFont('helvetica','bold');doc.text('Cargo:',40,y+30);doc.setFont('helvetica','normal');doc.text(cargo,130,y+30);
+  doc.setFont('helvetica','bold');doc.text('Equipos:',320,y+16);doc.setFont('helvetica','normal');doc.text(String(inventory.length),400,y+16);
+  doc.setFont('helvetica','bold');doc.text('Disponibilidad:',320,y+30);doc.setFont('helvetica','normal');doc.text(`${dispPct}%`,420,y+30);
+  y+=65;
+
+  // Resumen
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(10,68,136);doc.text('1. RESUMEN EJECUTIVO',30,y);y+=16;
+  doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(10);
+  const resWrap=doc.splitTextToSize(`El presente ${tipo.toLowerCase()} abarca el período ${periodo}. El parque tecnológico cuenta con ${inventory.length} equipos, de los cuales ${operativo} están operativos (${dispPct}% de disponibilidad). El índice de cumplimiento normativo NOM-241 es del ${compGlobal}%.`,535);
+  doc.text(resWrap,30,y);y+=resWrap.length*14+10;
+
+  // Indicadores
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(10,68,136);doc.text('2. INDICADORES',30,y);y+=14;
+  const inds=[['Equipos en inventario',String(inventory.length)],['Equipos operativos',`${operativo} (${dispPct}%)`],['Fuera de servicio',String(fuera)],['Cumplimiento NOM-241',`${compGlobal}%`],['Órdenes abiertas',String(openOrd)],['Órdenes cerradas',String(orders.filter(o=>o.status==='Cerrada').length)]];
+  inds.forEach(([l,v],i)=>{
+    doc.setFillColor(i%2===0?248:255,250,252);doc.rect(30,y-10,535,16,'F');
+    doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(10);doc.text(l,40,y);
+    doc.setFont('helvetica','bold');doc.text(v,400,y);y+=16;
+  });y+=10;
+
+  // Tabla de equipos
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(10,68,136);doc.text('3. DETALLE DE EQUIPOS',30,y);y+=14;
+  doc.setFillColor(10,68,136);doc.rect(30,y-10,535,16,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text('Equipo',35,y);doc.text('Área',200,y);doc.text('Estado',295,y);doc.text('Último Mant.',370,y);doc.text('NOM-241',470,y);y+=16;
+  inventory.forEach((eq,i)=>{
+    if(y>750){doc.addPage();y=40;}
+    const last=getLastMaint(eq,orders)||'Sin registro';
+    const nom=nom241Status(eq,orders);
+    doc.setFillColor(i%2===0?248:255,250,252);doc.rect(30,y-10,535,16,'F');
+    doc.setTextColor(30,30,30);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    doc.text(`${eq.type} ${eq.brand} ${eq.model}`.slice(0,34),35,y);
+    doc.text(String(eq.area).slice(0,18),200,y);doc.text(String(eq.status).slice(0,16),295,y);doc.text(String(last).slice(0,13),370,y);
+    doc.setFont('helvetica','bold');doc.setTextColor(nom.ok?22:220,nom.ok?163:38,nom.ok?74:38);doc.text(nom.label,470,y);y+=16;
+  });y+=10;
+
+  // Observaciones
+  if(y>700){doc.addPage();y=40;}
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(10,68,136);doc.text('4. OBSERVACIONES',30,y);y+=14;
+  doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);doc.setFontSize(10);
+  const obsWrap=doc.splitTextToSize(obs,535);doc.text(obsWrap,30,y);y+=obsWrap.length*14+20;
+
+  // Firmas
+  if(y>720){doc.addPage();y=40;}
+  doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);
+  doc.text('___________________________',60,y);doc.text('___________________________',340,y);y+=14;
+  doc.setFont('helvetica','bold');doc.text(responsable,60,y);doc.text('Director Médico / Supervisor',340,y);y+=12;
+  doc.setFont('helvetica','normal');doc.text(cargo,60,y);
+
+  // Footer
+  doc.setFontSize(8);doc.setTextColor(140);
+  doc.text(`Generado el ${fecha} — Sistema de Gestión de Tecnología Médica — Hospital Civil Nuevo de Guadalajara`,30,820);
+  doc.save(`${tipo.replace(/\s+/g,'-')}_${periodo.replace(/\s/g,'')}.pdf`);
+}
+
+document.addEventListener('DOMContentLoaded',()=>renderCumplimiento());
+</script>
+</body>
+</html>
